@@ -1,0 +1,58 @@
+#SPDX-License-Identifier: MIT-0
+---
+# tasks file for vector-role
+
+- name: Vector | Update apt cache
+  ansible.builtin.apt:
+    update_cache: true
+    cache_valid_time: 3600
+
+- name: Vector | Download .deb package
+  ansible.builtin.get_url:
+    url: "https://packages.timber.io/vector/{{ vector_version }}/vector_{{ vector_version }}_{{ vector_arch }}-unknown-linux-gnu.deb"
+    dest: "/tmp/vector.deb"
+    mode: '0644'
+    timeout: 30
+  check_mode: false
+  ignore_errors: true
+  register: vector_download
+
+- name: Vector | Install .deb package
+  ansible.builtin.apt:
+    deb: "/tmp/vector.deb"
+    state: present
+  when: vector_download is succeeded
+  notify: Start vector service
+
+- name: Vector | Create config directory
+  ansible.builtin.file:
+    path: /etc/vector
+    state: directory
+    mode: '0755'
+
+- name: Vector | Deploy config
+  ansible.builtin.template:
+    src: vector.yml.j2
+    dest: /etc/vector/vector.yml
+    mode: "0644"
+    owner: "{{ ansible_user_id | default('vagrant') }}"
+    group: "{{ ansible_user_gid | default('vagrant') }}"
+    validate: vector validate --no-environment --config-yaml %s
+  when: vector_download is succeeded
+
+- name: Vector | Deploy systemd unit
+  ansible.builtin.template:
+    src: vector.service.j2
+    dest: /etc/systemd/system/vector.service
+    mode: "0644"
+    owner: "{{ ansible_user_id | default('vagrant') }}"
+    group: "{{ ansible_user_gid | default('vagrant') }}"
+  when: vector_download is succeeded
+
+- name: Vector | Enable and start service
+  ansible.builtin.systemd:
+    name: vector
+    state: started
+    enabled: true
+    daemon_reload: true
+  when: vector_download is succeeded
