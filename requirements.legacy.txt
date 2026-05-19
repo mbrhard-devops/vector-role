@@ -1,0 +1,7 @@
+ansible==2.10.7
+molecule==3.2.0
+docker==4.4.4
+pytest-testinfra==6.0.0
+Jinja2==2.11.3
+pyyaml==5.4.1
+pexpect==4.8.0

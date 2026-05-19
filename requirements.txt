@@ -1,0 +1,5 @@
+ansible-core>=2.14
+molecule>=25.0
+molecule-plugins[docker]
+molecule-plugins[podman]
+pytest-testinfra

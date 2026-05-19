@@ -1,0 +1,23 @@
+---
+driver:
+  name: podman
+
+platforms:
+  - name: vector-podman-test
+    image: docker.io/library/ubuntu:24.04
+    pre_build_image: true
+    command: "sleep infinity"
+
+provisioner:
+  name: ansible
+  playbooks:
+    converge: ${MOLECULE_PROJECT_DIRECTORY}/tests/test.yml
+  inventory:
+    group_vars:
+      all:
+        clickhouse_endpoint: "http://127.0.0.1:8123"
+        clickhouse_database_name: "logs"
+        clickhouse_create_table_name: "dummy_logs"
+
+verifier:
+  name: ansible
