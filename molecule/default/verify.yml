@@ -1,0 +1,27 @@
+# molecule/default/verify.yml
+---
+- name: Verify vector-role
+  hosts: all
+  become: true
+  tasks:
+    - name: Check config directory exists
+      ansible.builtin.stat:
+        path: /etc/vector
+      register: config_dir
+      failed_when: not config_dir.stat.exists
+
+    - name: Check vector.yml config exists
+      ansible.builtin.stat:
+        path: /etc/vector/vector.yml
+      register: config_file
+      failed_when: not config_file.stat.exists
+
+    - name: Check systemd unit file exists
+      ansible.builtin.stat:
+        path: /etc/systemd/system/vector.service
+      register: svc_file
+      failed_when: not svc_file.stat.exists
+
+    - name: Print success
+      ansible.builtin.debug:
+        msg: "All checks passed for {{ ansible_distribution }} {{ ansible_distribution_version }}"

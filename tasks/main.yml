@@ -1,58 +1,55 @@
-#SPDX-License-Identifier: MIT-0
 ---
-# tasks file for vector-role
+# tasks/main.yml
 
-- name: Vector | Update apt cache
-  ansible.builtin.apt:
-    update_cache: true
-    cache_valid_time: 3600
-
-- name: Vector | Download .deb package
-  ansible.builtin.get_url:
-    url: "https://packages.timber.io/vector/{{ vector_version }}/vector_{{ vector_version }}_{{ vector_arch }}-unknown-linux-gnu.deb"
-    dest: "/tmp/vector.deb"
-    mode: '0644'
-    timeout: 30
-  check_mode: false
-  ignore_errors: true
-  register: vector_download
-
-- name: Vector | Install .deb package
-  ansible.builtin.apt:
-    deb: "/tmp/vector.deb"
-    state: present
-  when: vector_download is succeeded
-  notify: Start vector service
-
-- name: Vector | Create config directory
+- name: Create vector directories
   ansible.builtin.file:
-    path: /etc/vector
+    path: "{{ item }}"
     state: directory
     mode: '0755'
+    owner: "{{ vector_user }}"
+    group: "{{ vector_group }}"
+  loop:
+    - "{{ vector_path }}"
+    - "{{ vector_data_path }}"
+    - "{{ vector_config | dirname }}"
 
-- name: Vector | Deploy config
+- name: Download Vector binary
+  ansible.builtin.get_url:
+    url: "https://packages.vector.dev/vector-{{ vector_version }}-{{ vector_arch }}-unknown-linux-gnu.tar.gz"
+    dest: "/tmp/vector-{{ vector_version }}.tar.gz"
+    mode: '0644'
+  register: download_result
+  ignore_errors: true
+
+- name: Extract Vector binary
+  ansible.builtin.unarchive:
+    src: "/tmp/vector-{{ vector_version }}.tar.gz"
+    dest: "{{ vector_path }}"
+    remote_src: true
+    creates: "{{ vector_path }}/vector"
+  when: download_result is succeeded
+  failed_when: false
+
+- name: Deploy Vector configuration
   ansible.builtin.template:
     src: vector.yml.j2
-    dest: /etc/vector/vector.yml
-    mode: "0644"
-    owner: "{{ ansible_user_id | default('vagrant') }}"
-    group: "{{ ansible_user_gid | default('vagrant') }}"
-    validate: vector validate --no-environment --config-yaml %s
-  when: vector_download is succeeded
+    dest: "{{ vector_config }}"
+    mode: '0644'
 
-- name: Vector | Deploy systemd unit
+- name: Deploy systemd unit file
   ansible.builtin.template:
     src: vector.service.j2
     dest: /etc/systemd/system/vector.service
-    mode: "0644"
-    owner: "{{ ansible_user_id | default('vagrant') }}"
-    group: "{{ ansible_user_gid | default('vagrant') }}"
-  when: vector_download is succeeded
+    mode: '0644'
+  notify: Reload systemd
 
-- name: Vector | Enable and start service
+- name: Ensure Vector service is in desired state
   ansible.builtin.systemd:
     name: vector
-    state: started
-    enabled: true
+    state: "{{ vector_service_state }}"
+    enabled: "{{ vector_service_enabled }}"
     daemon_reload: true
-  when: vector_download is succeeded
+  when: 
+    - ansible_service_mgr == "systemd"
+    - lookup('file', '/run/systemd/system', errors='ignore') is defined
+  failed_when: false

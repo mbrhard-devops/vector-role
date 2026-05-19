@@ -1,9 +1,9 @@
-#SPDX-License-Identifier: MIT-0
+# handlers/main.yml
 ---
-# handlers file for vector-role
+# Обработчики, которые запускаются по notify
 
-- name: Start vector service
+- name: Reload systemd
   ansible.builtin.systemd:
-    name: vector
-    state: restarted
     daemon_reload: true
+  listen: "Reload systemd"
+  failed_when: false

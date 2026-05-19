@@ -1,4 +1,5 @@
-# playbook/templates/vector.conf.j2
+# templates/vector.yml.j2
+
 sources:
   dummy_logs:
     type: demo_logs
@@ -20,9 +21,9 @@ sinks:
     type: clickhouse
     inputs:
       - parse_logs
-    database: {{ clickhouse_database_name | default('logs') }}
-    endpoint: "http://{{ hostvars[groups['clickhouse'][0]]['ansible_host'] | default('clickhouse-01') }}:8123"
-    table: {{ clickhouse_create_table_name | default('dummy_logs') }}
+    database: "{{ clickhouse_database_name | default('logs') }}"
+    endpoint: "{{ clickhouse_endpoint | default('http://127.0.0.1:8123') }}"
+    table: "{{ clickhouse_create_table_name | default('dummy_logs') }}"
     compression: gzip
 
 api:

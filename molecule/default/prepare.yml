@@ -1,0 +1,11 @@
+# molecule/default/prepare.yml
+---
+- name: Prepare
+  hosts: all
+  gather_facts: false
+  tasks:
+
+    - name: No-op
+      ansible.builtin.debug:
+        msg: "Ready"
+      changed_when: false

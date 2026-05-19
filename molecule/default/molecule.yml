@@ -1,0 +1,45 @@
+# molecule/default/molecule.yml
+---
+# Зависимости роли
+dependency:
+  name: galaxy
+
+# Драйвер
+driver:
+  name: docker
+
+# Платформы для тестов
+platforms:
+  - name: vector-ubuntu-24
+    image: geerlingguy/docker-ubuntu2404-ansible:latest
+    pre_build_image: true
+    command: "sleep infinity"
+    privileged: true
+
+  - name: vector-ubuntu-22
+    image: geerlingguy/docker-ubuntu2204-ansible:latest
+    pre_build_image: true
+    command: "sleep infinity"
+    privileged: true
+
+# Настройки
+provisioner:
+  name: ansible
+  playbooks:
+    converge: ${MOLECULE_PROJECT_DIRECTORY}/tests/test.yml
+  config_options:
+    defaults:
+      interpreter_python: auto_silent
+      stdout_callback: default
+      remote_tmp: /tmp/.ansible
+      local_tmp: /tmp/.ansible
+      ansible_shell_type: sh
+  inventory:
+    group_vars:
+      all:
+        clickhouse_endpoint: "http://127.0.0.1:8123"
+        clickhouse_database_name: "logs"
+        clickhouse_create_table_name: "dummy_logs"
+
+verifier:
+  name: ansible

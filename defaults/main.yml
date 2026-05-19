@@ -1,43 +1,25 @@
-#SPDX-License-Identifier: MIT-0
 ---
-# defaults file for vector-role
+# defaults/main.yml
 
-# Версия и архитектура
-vector_version: "0.35.1"
-vector_arch: "x86_64"
+# Путь установки Vector
+vector_path: /opt/vector
 
-# Пути
-vector_config_dir: /etc/vector
-vector_config_file: "{{ vector_config_dir }}/vector.yml"
-vector_systemd_unit: /etc/systemd/system/vector.service
-vector_user: "{{ ansible_user_id | default('vagrant') }}"
-vector_group: "{{ ansible_user_gid | default('vagrant') }}"
+# Версия Vector
+vector_version: "0.37.1"
 
-# Конфигурация Vector
-vector_config:
-  sources:
-    dummy_logs:
-      type: demo_logs
-      format: syslog
-      interval: 1
-  transforms:
-    parse_logs:
-      inputs:
-        - dummy_logs
-      source: |-
-        . = parse_syslog!(string!(.message))
-        .timestamp = to_string(.timestamp)
-        .timestamp = slice!(.timestamp, start:0, end: -1)
-      type: remap
-  sinks:
-    to_clickhouse:
-      type: clickhouse
-      inputs:
-        - parse_logs
-      database: logs
-      endpoint: "http://127.0.0.1:8123"
-      table: dummy_logs
-      compression: gzip
-  api:
-    enabled: true
-    address: "0.0.0.0:8686"
+# Архитектура: amd64 или aarch64
+vector_arch: "{{ 'amd64' if ansible_facts['architecture'] == 'x86_64' else 'aarch64' }}"
+
+# Путь к конфигу
+vector_config: /etc/vector/vector.yml
+
+# Путь к данным
+vector_data_path: /var/lib/vector
+
+# Управление сервисом
+vector_service_state: started
+vector_service_enabled: true
+
+# Пользователь и группа для сервиса
+vector_user: root
+vector_group: root
